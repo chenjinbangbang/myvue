@@ -62,7 +62,20 @@ function objectToFormData (obj, form, namespace) {
 
         }
     }
+    
 
     return fd;
 
+}
+
+//上传文件
+export function uploadOss(data) {
+    let formData = new FormData();
+    formData.append("file", data.fileOss);
+
+    return request({
+        url: "/api/users/uploadOss",
+        method: "post",
+        data: formData
+    });
 }

@@ -36,7 +36,7 @@ app.use(bodyParser.json());
 let Storage = multer.diskStorage({
     //用来确定上传的文件应该存储在哪个文件夹中
     destination(req,file,callback){
-        callback(null,'./Images');
+        callback(null,'./static/images');
     },
     //用于确定文件夹中的文件名的确定，如果没有设置filename，每个文件将设置为一个随机文件名，并且是没有扩展名的
     filename(req,file,callback){
@@ -48,7 +48,7 @@ let upload = multer({
     storage: Storage
 });
 
-//let upload = multer({dest: './Images'}); //dest：在哪里存储文件
+//let upload = multer({dest: './static/images'}); //dest：在哪里存储文件
 
 
 //single(fieldname)：接受一个以fieldname命名的文件，这个文件的信息保存在req.file
@@ -57,7 +57,7 @@ let upload = multer({
 router.post('/upload',upload.single('file'),(req, res) => {
     console.log(req.file);
 
-    let sql = `insert into users (filename,size) values ('/server/Images/${req.file.filename}','${req.file.size}')`;
+    let sql = `insert into users (filename,size) values ('/static/images/${req.file.filename}','${req.file.size}')`;
 
     connection.query(sql,(err,result) => {
         if(err){
@@ -82,9 +82,9 @@ router.post('/upload1',upload.array('files',3),(req, res) => {
     let insertVal = ``;
     req.files.forEach((item,index) => {
         if(index < (req.files.length-1)){
-            insertVal += `('/server/Images/${item.filename}','${item.size}'),`;
+            insertVal += `('/static/images/${item.filename}','${item.size}'),`;
         }else{
-            insertVal += `('/server/Images/${item.filename}','${item.size}')`;
+            insertVal += `('/static/images/${item.filename}','${item.size}')`;
         }
 
     });
@@ -127,8 +127,46 @@ router.get('/getImgList',(req, res) => {
         });
 
     });
-
-
 });
+
+
+/*=================================阿里云OSS========================*/
+let co = require('co');
+let oss = require('ali-oss');
+let client = oss({
+    accessKeyId: 'LTAI4SKIxANymBf3',
+    accessKeySecret: 'a27sLvHq2W2x0Pet1xgtBHG0TjV4YA',
+    region: 'oss-cn-hangzhou',
+    //bucket: 'http://myvue.oss-cn-hangzhou.aliyuncs.com',
+    
+});
+
+let fs = require('fs');
+let ossUpload = multer({dest: './static/images'}); 
+
+co(function* (){
+    let result = yield client.listBuckets(); //查看所有的bucket
+    //console.log(result);
+
+    let result1 = yield client.listBuckets({
+        prefix: 'mj' //查找前缀
+    });
+    console.log(result1);
+});
+
+router.post('/uploadOss',ossUpload.single('file'),(req,res) => {
+    console.log(req.file);
+
+    co(function* (){
+
+        //let stream = fs.createReadStream(req.file.buffer);
+         
+        let result = yield client.put('myvue',req.file);
+        console.log(result);
+    }).catch(err =>{
+        console.log(err);
+    });
+});
+
 
 module.exports = router;
